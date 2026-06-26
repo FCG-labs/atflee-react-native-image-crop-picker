@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -19,6 +20,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.callback.BitmapCropCallback;
@@ -47,6 +52,7 @@ public class AtfleeUCropActivity extends Activity {
         super.onCreate(savedInstanceState);
         configureWindow();
         setContentView(R.layout.atflee_ucrop_activity);
+        applySystemBarInsets();
         bindViews();
         configureCropper(getIntent());
         configureRatioTabs();
@@ -64,8 +70,43 @@ public class AtfleeUCropActivity extends Activity {
 
     private void configureWindow() {
         Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, false);
         window.setStatusBarColor(Color.BLACK);
         window.setNavigationBarColor(Color.BLACK);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+    }
+
+    private void applySystemBarInsets() {
+        View root = findViewById(R.id.atflee_crop_root);
+        View shell = findViewById(R.id.atflee_crop_shell);
+        View ratioScroll = findViewById(R.id.atflee_crop_ratio_scroll);
+        View footer = findViewById(R.id.atflee_crop_footer);
+
+        final int ratioHeight = ratioScroll.getLayoutParams().height;
+        final int footerHeight = footer.getLayoutParams().height;
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (view, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            shell.setPadding(bars.left, 0, bars.right, 0);
+            setViewHeight(ratioScroll, ratioHeight + bars.top);
+            ratioScroll.setPadding(0, bars.top, 0, 0);
+            setViewHeight(footer, footerHeight + bars.bottom);
+            footer.setPadding(0, 0, 0, bars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+    }
+
+    private void setViewHeight(@NonNull View view, int height) {
+        ViewGroup.LayoutParams params = view.getLayoutParams();
+        if (params.height == height) {
+            return;
+        }
+        params.height = height;
+        view.setLayoutParams(params);
     }
 
     private void bindViews() {
@@ -205,7 +246,6 @@ public class AtfleeUCropActivity extends Activity {
 
     private void configureFooter() {
         findViewById(R.id.atflee_crop_cancel).setOnClickListener(view -> cancelCrop());
-        findViewById(R.id.atflee_crop_reset).setOnClickListener(view -> resetRotation());
         findViewById(R.id.atflee_crop_rotate).setOnClickListener(view -> rotateByAngle(90));
         findViewById(R.id.atflee_crop_done).setOnClickListener(view -> cropAndSaveImage());
     }
@@ -231,11 +271,6 @@ public class AtfleeUCropActivity extends Activity {
         finish();
     }
 
-    private void resetRotation() {
-        cropImageView.postRotate(-cropImageView.getCurrentAngle());
-        cropImageView.setImageToWrapCropBounds();
-    }
-
     private void rotateByAngle(int angle) {
         cropImageView.postRotate(angle);
         cropImageView.setImageToWrapCropBounds();
@@ -255,7 +290,6 @@ public class AtfleeUCropActivity extends Activity {
 
     private void setFooterEnabled(boolean enabled) {
         ((ImageButton) findViewById(R.id.atflee_crop_cancel)).setEnabled(enabled);
-        ((ImageButton) findViewById(R.id.atflee_crop_reset)).setEnabled(enabled);
         ((ImageButton) findViewById(R.id.atflee_crop_rotate)).setEnabled(enabled);
         ((ImageButton) findViewById(R.id.atflee_crop_done)).setEnabled(enabled);
     }

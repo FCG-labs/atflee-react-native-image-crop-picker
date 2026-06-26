@@ -74,19 +74,9 @@
                     android:layout_weight="1" />
 
                 <ImageButton
-                    android:id="@+id/atflee_crop_reset"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Reset crop rotation"
-                    android:padding="11dp"
-                    android:src="@drawable/atflee_ic_crop_reset" />
-
-                <ImageButton
                     android:id="@+id/atflee_crop_rotate"
                     android:layout_width="48dp"
                     android:layout_height="48dp"
-                    android:layout_marginStart="18dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Rotate crop"
                     android:padding="11dp"
