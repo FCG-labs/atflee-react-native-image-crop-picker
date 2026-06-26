@@ -44,6 +44,7 @@ export type PickerOptions = {
   showCropFrame?: boolean;
   hideBottomControls?: boolean;
   enableRotationGesture?: boolean;
+  atfleeCropper?: boolean;
   disableCropperColorSetters?: boolean;
   useFrontCamera?: boolean;
 };

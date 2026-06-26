@@ -92,6 +92,7 @@ class ImageCropPicker implements ActivityEventListener {
     private boolean useFrontCamera = false;
     private boolean cropperStatusBarLight = true;
     private boolean cropperNavigationBarLight = false;
+    private boolean atfleeCropper = false;
     private ReadableMap options;
 
     private String cropperActiveWidgetColor = null;
@@ -101,6 +102,8 @@ class ImageCropPicker implements ActivityEventListener {
 
     private int width = 0;
     private int height = 0;
+    private int compressImageMaxWidth = 0;
+    private int compressImageMaxHeight = 0;
 
     private int maxFiles = 5;
 
@@ -129,6 +132,8 @@ class ImageCropPicker implements ActivityEventListener {
         includeExif = options.hasKey("includeExif") && options.getBoolean("includeExif");
         width = options.hasKey("width") ? options.getInt("width") : 0;
         height = options.hasKey("height") ? options.getInt("height") : 0;
+        compressImageMaxWidth = options.hasKey("compressImageMaxWidth") ? options.getInt("compressImageMaxWidth") : 0;
+        compressImageMaxHeight = options.hasKey("compressImageMaxHeight") ? options.getInt("compressImageMaxHeight") : 0;
         maxFiles = options.hasKey("maxFiles") ? options.getInt("maxFiles") : maxFiles;
         cropping = options.hasKey("cropping") && options.getBoolean("cropping");
         cropperActiveWidgetColor = options.hasKey("cropperActiveWidgetColor") ? options.getString("cropperActiveWidgetColor") : null;
@@ -145,6 +150,7 @@ class ImageCropPicker implements ActivityEventListener {
         useFrontCamera = options.hasKey("useFrontCamera") && options.getBoolean("useFrontCamera");
         cropperStatusBarLight = options.hasKey("cropperStatusBarLight") ? options.getBoolean("cropperStatusBarLight") : true;
         cropperNavigationBarLight = options.hasKey("cropperNavigationBarLight") ? options.getBoolean("cropperNavigationBarLight") : false;
+        atfleeCropper = options.hasKey("atfleeCropper") && options.getBoolean("atfleeCropper");
         this.options = options;
     }
 
@@ -744,10 +750,19 @@ class ImageCropPicker implements ActivityEventListener {
                 .of(uri, Uri.fromFile(new File(this.getTmpDir(activity), UUID.randomUUID().toString() + ".jpg")))
                 .withOptions(options);
 
-        if (width > 0 && height > 0) {
+        if (!atfleeCropper && width > 0 && height > 0) {
             uCrop.withAspectRatio(width, height);
         }
+        if (atfleeCropper && compressImageMaxWidth > 0 && compressImageMaxHeight > 0) {
+            uCrop.withMaxResultSize(compressImageMaxWidth, compressImageMaxHeight);
+        }
 
+        if (atfleeCropper) {
+            Intent cropIntent = uCrop.getIntent(activity);
+            cropIntent.setClass(activity, AtfleeUCropActivity.class);
+            activity.startActivityForResult(cropIntent, UCrop.REQUEST_CROP);
+            return;
+        }
         uCrop.start(activity);
     }
 

@@ -75,7 +75,8 @@ RCT_EXPORT_MODULE(RNCImageCropPicker);
             @"sortOrder": @"none",
             @"cropperCancelText": @"Cancel",
             @"cropperChooseText": @"Choose",
-            @"cropperRotateButtonsHidden": @NO
+            @"cropperRotateButtonsHidden": @NO,
+            @"atfleeCropper": @NO
         };
         self.compression = [[Compression alloc] init];
     }
@@ -886,19 +887,25 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 - (void)cropImage:(UIImage *)image {
     dispatch_async(dispatch_get_main_queue(), ^{
         TOCropViewController *cropVC;
+        BOOL useAtfleeCropper = [[[self options] objectForKey:@"atfleeCropper"] boolValue];
         if ([[[self options] objectForKey:@"cropperCircleOverlay"] boolValue]) {
             cropVC = [[TOCropViewController alloc] initWithCroppingStyle:TOCropViewCroppingStyleCircular image:image];
         } else {
             cropVC = [[TOCropViewController alloc] initWithImage:image];
             CGFloat widthRatio = [[self.options objectForKey:@"width"] floatValue];
             CGFloat heightRatio = [[self.options objectForKey:@"height"] floatValue];
-            if (widthRatio > 0 && heightRatio > 0){
+            if (!useAtfleeCropper && widthRatio > 0 && heightRatio > 0){
                 CGSize aspectRatio = CGSizeMake(widthRatio, heightRatio);
                 cropVC.customAspectRatio = aspectRatio;
                 
             }
             cropVC.aspectRatioLockEnabled = ![[self.options objectForKey:@"freeStyleCropEnabled"] boolValue];
             cropVC.resetAspectRatioEnabled = !cropVC.aspectRatioLockEnabled;
+            if (useAtfleeCropper) {
+                cropVC.aspectRatioLockEnabled = NO;
+                cropVC.resetAspectRatioEnabled = YES;
+                cropVC.aspectRatioLockDimensionSwapEnabled = YES;
+            }
         }
         
         cropVC.title = [[self options] objectForKey:@"cropperToolbarTitle"];
@@ -917,6 +924,18 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         cropVC.doneButtonTitle = [self.options objectForKey:@"cropperChooseText"];
         cropVC.cancelButtonTitle = [self.options objectForKey:@"cropperCancelText"];
         cropVC.rotateButtonsHidden = [[self.options objectForKey:@"cropperRotateButtonsHidden"] boolValue];
+        if (useAtfleeCropper) {
+            cropVC.title = nil;
+            cropVC.toolbarPosition = TOCropViewControllerToolbarPositionBottom;
+            cropVC.showOnlyIcons = YES;
+            cropVC.hidesNavigationBar = YES;
+            cropVC.rotateButtonsHidden = NO;
+            cropVC.rotateClockwiseButtonHidden = NO;
+            cropVC.resetButtonHidden = NO;
+            cropVC.aspectRatioPickerButtonHidden = NO;
+            cropVC.doneButtonColor = [UIColor whiteColor];
+            cropVC.cancelButtonColor = [UIColor whiteColor];
+        }
         
         cropVC.modalPresentationStyle = UIModalPresentationFullScreen;
         if (@available(iOS 15.0, *)) {

@@ -319,6 +319,14 @@ declare module "react-native-image-crop-picker" {
         enableRotationGesture?: boolean;
 
         /**
+         * Enables Atflee's custom cropper chrome while keeping the uCrop engine.
+         *
+         * @platform Android only
+         * @default false
+         */
+        atfleeCropper?: boolean;
+
+        /**
          * When cropping image, disables the color setters for cropping library.
          *
          * @platform Android only

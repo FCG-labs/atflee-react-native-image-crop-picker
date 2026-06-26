@@ -27,6 +27,12 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:exported="false" />
 
+        <activity
+            android:name=".AtfleeUCropActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+
 
         <!-- Prompt Google Play services to install the backported photo picker module -->
         <service android:name="com.google.android.gms.metadata.ModuleDependencies" android:enabled="false" android:exported="false">
