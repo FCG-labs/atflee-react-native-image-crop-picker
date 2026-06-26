@@ -120,6 +120,7 @@ public class AtfleeUCropActivity extends Activity {
 
     private void configureCropper(@NonNull Intent intent) {
         processCompressionOptions(intent);
+        cropImageView.setGestureEnabled(true);
         cropImageView.setScaleEnabled(true);
         cropImageView.setRotateEnabled(false);
         cropImageView.setMaxBitmapSize(intent.getIntExtra(
@@ -149,7 +150,7 @@ public class AtfleeUCropActivity extends Activity {
     }
 
     private void configureOverlay(@NonNull Intent intent) {
-        overlayView.setFreestyleCropEnabled(true);
+        setFreestyleCropMode(true);
         overlayView.setDimmedColor(intent.getIntExtra(
                 UCrop.Options.EXTRA_DIMMED_LAYER_COLOR,
                 ContextCompat.getColor(this, com.yalantis.ucrop.R.color.ucrop_color_default_dimmed)
@@ -222,12 +223,18 @@ public class AtfleeUCropActivity extends Activity {
             wrapImageIfLoaded();
             return;
         }
-        overlayView.setFreestyleCropEnabled(option.freestyle);
+        setFreestyleCropMode(option.freestyle);
         cropImageView.setTargetAspectRatio(option.aspectRatio);
         wrapImageIfLoaded();
         for (TextView tab : ratioTabs) {
             styleRatioTab(tab, tab == selectedTab);
         }
+    }
+
+    private void setFreestyleCropMode(boolean enabled) {
+        overlayView.setFreestyleCropMode(enabled
+                ? OverlayView.FREESTYLE_CROP_MODE_ENABLE_WITH_PASS_THROUGH
+                : OverlayView.FREESTYLE_CROP_MODE_DISABLE);
     }
 
     private void wrapImageIfLoaded() {
