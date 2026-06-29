@@ -30,6 +30,9 @@
 #define ERROR_CROPPER_IMAGE_NOT_FOUND_KEY @"E_CROPPER_IMAGE_NOT_FOUND"
 #define ERROR_CROPPER_IMAGE_NOT_FOUND_MSG @"Can't find the image at the specified path"
 
+#define ERROR_CROPPER_PRESENTATION_FAILED_KEY @"E_CROPPER_PRESENTATION_FAILED"
+#define ERROR_CROPPER_PRESENTATION_FAILED_MSG @"Cannot present cropper while another view controller is transitioning"
+
 #define ERROR_CLEANUP_ERROR_KEY @"E_ERROR_WHILE_CLEANING_FILES"
 #define ERROR_CLEANUP_ERROR_MSG @"Error while cleaning up tmp files"
 
@@ -38,6 +41,9 @@
 
 #define ERROR_CANNOT_PROCESS_VIDEO_KEY @"E_CANNOT_PROCESS_VIDEO"
 #define ERROR_CANNOT_PROCESS_VIDEO_MSG @"Cannot process video data"
+
+static const NSTimeInterval RNCImageCropPickerPresentRetryDelay = 0.05;
+static const NSInteger RNCImageCropPickerPresentRetryLimit = 60;
 
 @implementation ImageResult
 @end
@@ -130,11 +136,47 @@ RCT_EXPORT_MODULE(RNCImageCropPicker);
 
 - (UIViewController*) getRootVC {
     UIViewController *root = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
-    while (root.presentedViewController != nil) {
+    while (root.presentedViewController != nil && !root.presentedViewController.isBeingDismissed) {
         root = root.presentedViewController;
+    }
+    while ((root.isBeingDismissed || root.view.window == nil) && root.presentingViewController != nil) {
+        root = root.presentingViewController;
     }
     
     return root;
+}
+
+- (BOOL)isReadyToPresentFrom:(UIViewController *)presenter {
+    if (presenter == nil || presenter.view.window == nil || presenter.isBeingDismissed || presenter.isMovingFromParentViewController) {
+        return NO;
+    }
+    if (presenter.transitionCoordinator != nil ||
+        presenter.navigationController.transitionCoordinator != nil ||
+        presenter.presentedViewController.transitionCoordinator != nil ||
+        presenter.presentingViewController.transitionCoordinator != nil) {
+        return NO;
+    }
+
+    return presenter.presentedViewController == nil;
+}
+
+- (void)presentCropperWhenReady:(UIViewController *)cropVC attempt:(NSInteger)attempt {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UIViewController *presenter = [self getRootVC];
+        if (![self isReadyToPresentFrom:presenter]) {
+            if (attempt >= RNCImageCropPickerPresentRetryLimit) {
+                self.reject(ERROR_CROPPER_PRESENTATION_FAILED_KEY, ERROR_CROPPER_PRESENTATION_FAILED_MSG, nil);
+                return;
+            }
+
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(RNCImageCropPickerPresentRetryDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self presentCropperWhenReady:cropVC attempt:attempt + 1];
+            });
+            return;
+        }
+
+        [presenter presentViewController:cropVC animated:FALSE completion:nil];
+    });
 }
 
 RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
@@ -942,7 +984,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
             cropVC.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
         }
         
-        [[self getRootVC] presentViewController:cropVC animated:FALSE completion:nil];
+        [self presentCropperWhenReady:cropVC attempt:0];
     });
 }
 #pragma mark - TOCropViewController Delegate
