@@ -849,15 +849,19 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
 - (void)imageCropViewController:(UIViewController *)controller
                    didCropImage:(UIImage *)croppedImage
                   usingCropRect:(CGRect)cropRect {
-    
-    // we have correct rect, but not correct dimensions
-    // so resize image
-    CGSize desiredImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue],
-                                         [[[self options] objectForKey:@"height"] intValue]);
-    
-    UIImage *resizedImage = [croppedImage resizedImageToFitInSize:desiredImageSize scaleIfSmaller:YES];
-    ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
-    
+
+    BOOL useAtfleeCropper = [[[self options] objectForKey:@"atfleeCropper"] boolValue];
+    UIImage *imageToPersist = croppedImage;
+
+    if (!useAtfleeCropper) {
+        // Legacy cropper mode expects width/height to define the final output box.
+        CGSize desiredImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue],
+                                             [[[self options] objectForKey:@"height"] intValue]);
+        imageToPersist = [croppedImage resizedImageToFitInSize:desiredImageSize scaleIfSmaller:YES];
+    }
+
+    ImageResult *imageResult = [self.compression compressImage:imageToPersist withOptions:self.options];
+
     NSString *filePath = [self persistFile:imageResult.data];
     if (filePath == nil) {
         [self dismissCropper:controller selectionDone:YES completion:[self waitAnimationEnd:^{
